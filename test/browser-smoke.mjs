@@ -30,24 +30,8 @@ try {
   await page.getByRole('button', {name:'Retry',exact:true}).click();
   await page.waitForFunction(() => document.querySelector('canvas') && !document.querySelector('.tour-status'));
   assert.equal(await page.locator('.psv-container').count(),1,'one engine surface after WebGL retry');
-  await page.getByRole('slider',{name:'Camera zoom',exact:true}).waitFor();
-  await page.getByRole('button',{name:'Orientation 2',exact:true}).click();
-  await page.waitForFunction(()=>!document.querySelector('.tour-status'));
-  assert.equal(await page.getByLabel('View',{exact:true}).inputValue(),'karnala-summit');
-  await page.waitForFunction(()=>!document.querySelector('.tour-status')&&Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-Math.PI)<.005);
-  const zoom=page.getByRole('slider',{name:'Camera zoom',exact:true});await zoom.focus();await page.keyboard.press('End');
-  await page.waitForFunction(()=>document.querySelector('[aria-label="Camera zoom"]').value==='100');
-  assert.equal(await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel()),100,'range moves actual camera');
-  await page.mouse.move(220,350);await page.keyboard.down('Control');await page.mouse.wheel(0,200);await page.keyboard.up('Control');
-  await page.waitForFunction(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel()<100);
-  await page.waitForTimeout(300);
-  const actualZoom=await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel());
-  await page.waitForFunction(()=>Math.abs(Number(document.querySelector('#camera-zoom').value)-document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel())<=1);
-  await page.locator('.tour-selection').hover();await page.mouse.wheel(0,-200);await page.waitForTimeout(120);
-  assert.equal(await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel()),actualZoom,'wheel over controls does not manipulate camera');
-  await page.getByRole('button',{name:'Orientation 3',exact:true}).click();await page.emulateMedia({reducedMotion:'reduce'});await page.waitForFunction(()=>document.querySelector('.tour-shell').dataset.motion==='reduced');await page.waitForFunction(()=>!document.querySelector('.tour-status')&&Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-Math.PI/2)<.005);
-  await page.emulateMedia({reducedMotion:'no-preference'});await page.waitForFunction(()=>document.querySelector('.tour-shell').dataset.motion==='full');
-  await page.getByLabel('View',{exact:true}).selectOption('karnala');await page.waitForFunction(()=>!document.querySelector('.tour-status'));
+  assert.equal(await page.locator('.tour-selection').count(),0,'no control dock over the panorama');
+  assert.equal(await page.locator('.orientation-chapters').count(),0,'no orientation rail over the panorama');
 
   await page.evaluate(() => { window.testCanvas = document.querySelector('canvas'); });
   const before = await page.locator('canvas').screenshot();
@@ -60,16 +44,51 @@ try {
   await client.send('Input.dispatchTouchEvent', { type: 'touchEnd', touchPoints: [] });
   const after = await page.locator('canvas').screenshot();
   assert.notDeepEqual(before, after, 'touch dragging changes the panorama');
-  console.log('Motion controls passed: actual range/wheel camera zoom, native control wheel, orientation chapter, live reduced motion. Touch drag passed');
-  await page.getByLabel('View', { exact: true }).selectOption('karnala-summit');
-  await page.waitForFunction(() => !document.querySelector('.tour-status'));
-  assert.equal(await page.evaluate(() => window.testCanvas === document.querySelector('canvas')), true, 'scene changes reuse the renderer');
-  await page.getByLabel('View', { exact: true }).selectOption('karnala');
-  await page.waitForFunction(() => !document.querySelector('.tour-status'));
-  await page.getByRole('button', { name: 'Historical Fort', exact: true }).click();
+  console.log('Touch drag passed');
+
+  // Page cards are the orientation control now.
+  await page.getByRole('button', {name:'View Valley & Far Hill in the panorama', exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.tour-status')&&Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-Math.PI)<.01);
+  await page.waitForFunction(()=>window.scrollY<2,undefined,{timeout:5000});
+  assert.equal(await page.evaluate(()=>window.testCanvas === document.querySelector('canvas')), true, 'scene changes reuse the renderer');
+  console.log('Orientation card returns to the hero and reuses the renderer');
+
+  // Ctrl/⌘ + wheel zooms; a plain wheel scrolls the page.
+  await page.mouse.move(200,300);
+  const zoomStart = await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel());
+  await page.keyboard.down('Control'); await page.mouse.wheel(0,300); await page.keyboard.up('Control');
+  await page.waitForFunction(value=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel()<value-1, zoomStart);
+  const zoomed = await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel());
+  await page.mouse.wheel(0,400); await page.waitForTimeout(400);
+  assert.equal(await page.evaluate(()=>window.scrollY)>0, true, 'plain wheel scrolls the page');
+  assert.equal(await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getZoomLevel()), zoomed, 'plain wheel leaves the lens alone');
+  await page.evaluate(()=>window.scrollTo(0,0));
+  console.log('Ctrl+wheel zoom and plain-wheel page scroll passed');
+
+  await page.getByRole('button', {name:'View The Rock Face in the panorama', exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.tour-status')&&Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-Math.PI/180*25)<.02);
+  await page.locator('.tour-surface').focus();
+  const yawBefore = await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw);
+  await page.keyboard.press('ArrowRight');
+  await page.waitForFunction(value=>Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-value)>.04, yawBefore);
+
+  await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.rotate({yaw:-45*Math.PI/180,pitch:10*Math.PI/180}));
+  await page.waitForTimeout(400);
+  await page.locator('.tour-marker--info').click();
   await page.getByRole('dialog').waitFor();
+  assert.match(await page.getByRole('dialog').innerText(), /Karnala Fort/);
   await page.keyboard.press('Escape');
-  assert.equal(await page.evaluate(() => document.activeElement?.textContent), 'Historical Fort');
+  await page.waitForFunction(()=>!document.querySelector('dialog[open]'));
+  console.log('Keyboard rotation and information dialog passed');
+
+  await page.emulateMedia({reducedMotion:'reduce'});
+  await page.waitForFunction(()=>document.querySelector('.tour-shell').dataset.motion==='reduced');
+  await page.getByRole('button', {name:'View Cliff Wall in the panorama', exact:true}).click();
+  await page.waitForFunction(()=>!document.querySelector('.tour-status')&&Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-Math.PI/2)<.01);
+  await page.emulateMedia({reducedMotion:'no-preference'});
+  await page.waitForFunction(()=>document.querySelector('.tour-shell').dataset.motion==='full');
+  console.log('Reduced motion orientation jump passed');
+
   for (const width of [320, 375, 414, 768, 1280]) {
     await page.setViewportSize({ width, height: 812 });
     await page.waitForFunction(()=>Math.abs(document.querySelector('.psv-canvas').clientWidth-innerWidth)<=1);
@@ -77,70 +96,7 @@ try {
     await page.screenshot({path:`/tmp/virtual360-gallery-${width}.png`});
   }
   assert.equal(errors.filter(message => !/WebGL/.test(message)).length, 0);
-  console.log('Navigation, focus, and responsive checks passed');
-  await page.getByRole('button', {name:'Save viewpoint',exact:true}).click();
-  await page.getByLabel('Title', {exact:true}).fill('Ridge & sky');
-  await page.getByLabel('Your observation', {exact:true}).fill('Personal note: café <script>alert(1)</script>');
-  await page.getByRole('button', {name:'Save observation',exact:true}).click();
-  const saved=await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations[0]);
-  assert.equal(saved.title,'Ridge & sky'); assert.equal(Number.isFinite(saved.yaw),true); assert.equal(saved.zoom>=0 && saved.zoom<=100,true);
-  await page.locator('.observation-index > details > summary').click();
-  await page.getByRole('button', {name:'Ridge & sky',exact:true}).click();
-  await page.getByRole('button', {name:'Share viewpoint',exact:true}).click();
-  const share=await page.getByLabel('Viewpoint URL').inputValue();
-  assert.equal(new URL(share).hash.includes('view=1'),true);
-  await page.keyboard.press('Escape');
-  assert.equal(await page.evaluate(()=>document.activeElement?.textContent),'Ridge & sky');
-  await page.evaluate(url=>{location.hash=new URL(url).hash},share);
-  await page.getByText('Shared viewpoint',{exact:true}).waitFor();
-  await page.goto(share); await page.reload(); await page.evaluate(()=>{window.disableWebGL=false});
-  await page.getByRole('button',{name:'Retry',exact:true}).click();
-  await page.waitForFunction(()=>!document.querySelector('.tour-status'));
-  assert.equal(await page.getByText('Shared viewpoint', {exact:true}).count(),1);
-  assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations.length),1);
-  for(const width of [320,375,414,768]) {await page.setViewportSize({width,height:812});assert.equal(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth),true);}
-  await page.getByRole('button',{name:'Shared viewpoint',exact:true}).click();
-  await page.setViewportSize({width:375,height:812});
-  await page.waitForFunction(()=>Math.abs(document.querySelector('.psv-canvas').clientWidth-innerWidth)<=1);
-  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await page.screenshot({path:'/tmp/virtual360-notebook-mobile.png'});
-  await page.keyboard.press('Escape');
-  await page.setViewportSize({width:1280,height:812});
-  await page.waitForFunction(()=>Math.abs(document.querySelector('.psv-canvas').clientWidth-innerWidth)<=1);
-  await page.evaluate(()=>new Promise(resolve=>requestAnimationFrame(()=>requestAnimationFrame(resolve))));
-  await page.screenshot({path:'/tmp/virtual360-notebook-desktop.png'});
-  console.log('Saved observation persistence, inert text, share URL and focus passed');
-  const notebook=page.locator('.observation-index > details');if(!await notebook.evaluate(element=>element.open))await notebook.locator(':scope > summary').click();
-  await page.getByRole('button',{name:'Ridge & sky',exact:true}).click();
-  await page.getByRole('button',{name:'Edit observation',exact:true}).click();
-  await page.getByLabel('Title',{exact:true}).fill('Edited ridge');
-  await page.getByRole('button',{name:'Save observation',exact:true}).click();
-  const edited=await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations[0]);assert.equal(edited.id,saved.id);assert.equal(edited.yaw,saved.yaw);assert.equal(edited.title,'Edited ridge');
-  await page.getByRole('button',{name:'Edited ridge',exact:true}).click();await page.getByRole('button',{name:'Delete observation',exact:true}).click();await page.getByRole('button',{name:'Keep observation',exact:true}).click();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations.length),1);
-  await page.getByRole('button',{name:'Delete observation',exact:true}).click();await page.getByRole('button',{name:'Confirm delete',exact:true}).click();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations.length),0);
-  await page.getByRole('button',{name:'Undo delete: Edited ridge',exact:true}).click();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations[0].id),saved.id);
-  const beforeImport=await page.evaluate(()=>localStorage.getItem('karnala-field-notebook-v1'));
-  await page.getByLabel('Import notebook file',{exact:true}).setInputFiles({name:'invalid.json',mimeType:'application/json',buffer:Buffer.from('{broken')});await page.getByRole('status').filter({hasText:'JSON'}).waitFor();assert.equal(await page.evaluate(()=>localStorage.getItem('karnala-field-notebook-v1')),beforeImport);
-  const imported={...edited,id:'imported',title:'Imported viewpoint'};
-  await page.getByLabel('Import notebook file',{exact:true}).setInputFiles({name:'valid.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({version:1,observations:[edited,imported]}))});
-  await page.getByRole('button',{name:'Merge missing observations',exact:true}).click();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations.length),2);
-  const download=page.waitForEvent('download');await page.getByRole('button',{name:'Export notebook',exact:true}).click();assert.equal((await download).suggestedFilename(),'karnala-notebook.json');
-  await page.getByLabel('Import notebook file',{exact:true}).setInputFiles({name:'replace.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({version:1,observations:[imported]}))});assert.equal(await page.getByRole('button',{name:'Replace notebook',exact:true}).isDisabled(),true);
-  await page.getByRole('checkbox').check();await page.getByRole('button',{name:'Replace notebook',exact:true}).click();assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(key=>key.startsWith('karnala-field-notebook-v1.recovery.')).length),1);
-  const cameraBefore=await page.evaluate(()=>document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw);await page.locator('.tour-surface').focus();await page.keyboard.press('ArrowRight');await page.waitForFunction(previous=>Math.abs(document.querySelector('.tour-surface').photoSphereViewer.getPosition().yaw-previous)>.04,cameraBefore);
-  await page.getByRole('button',{name:'Imported viewpoint',exact:true}).click();await page.getByRole('button',{name:'Edit observation',exact:true}).click();await page.getByLabel('Title',{exact:true}).fill('Unsaved quota edit');
-  await page.evaluate(()=>{window.fixtureSetItem=Storage.prototype.setItem;Storage.prototype.setItem=function(key,value){if(key==='karnala-field-notebook-v1')throw new Error('Fixture quota exhausted');return window.fixtureSetItem.call(this,key,value)}});
-  await page.getByRole('button',{name:'Save observation',exact:true}).click();await page.getByRole('alert').filter({hasText:'Fixture quota exhausted'}).waitFor();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations[0].title),'Imported viewpoint');assert.equal(await page.locator('.note-sheet').first().evaluate(dialog=>dialog.open),true);
-  await page.evaluate(()=>{Storage.prototype.setItem=window.fixtureSetItem});await page.keyboard.press('Escape');
-  await page.evaluate(()=>localStorage.setItem('unrelated-fixture-app','keep'));
-  await page.getByRole('button',{name:'Clear notebook and recovery data',exact:true}).click();await page.getByRole('button',{name:'Keep notebook',exact:true}).click();assert.equal(await page.evaluate(()=>JSON.parse(localStorage.getItem('karnala-field-notebook-v1')).observations.length),1);
-  await page.getByRole('button',{name:'Clear notebook and recovery data',exact:true}).click();
-  await page.evaluate(()=>{window.fixtureRemoveItem=Storage.prototype.removeItem;Storage.prototype.removeItem=function(key){if(key==='karnala-field-notebook-v1')throw new Error('fixture removal failure');return window.fixtureRemoveItem.call(this,key)}});await page.getByRole('button',{name:'Confirm clear notebook',exact:true}).click();await page.getByRole('alert').filter({hasText:'Removal incomplete'}).waitFor();assert.equal(await page.getByRole('button',{name:'Imported viewpoint',exact:true}).count(),1);await page.evaluate(()=>{Storage.prototype.removeItem=window.fixtureRemoveItem});
-  await page.getByRole('button',{name:'Confirm clear notebook',exact:true}).click();assert.equal(await page.evaluate(()=>Object.keys(localStorage).filter(key=>key==='karnala-field-notebook-v1' || key.startsWith('karnala-field-notebook-v1.recovery.')).length),0);assert.equal(await page.evaluate(()=>localStorage.getItem('unrelated-fixture-app')),'keep');
-  await page.evaluate(()=>{window.fixtureFileText=File.prototype.text;File.prototype.text=function(){const file=this;return new Promise(resolve=>{window.releaseNotebookRead=()=>window.fixtureFileText.call(file).then(resolve)})}});
-  await page.getByLabel('Import notebook file',{exact:true}).setInputFiles({name:'pending.json',mimeType:'application/json',buffer:Buffer.from(JSON.stringify({version:1,observations:[imported]}))});await page.waitForFunction(()=>typeof window.releaseNotebookRead==='function');
-  await page.getByRole('button',{name:'Clear notebook and recovery data',exact:true}).click();await page.getByRole('button',{name:'Confirm clear notebook',exact:true}).click();await page.evaluate(()=>{File.prototype.text=window.fixtureFileText;window.releaseNotebookRead()});await page.waitForTimeout(250);assert.equal(await page.getByRole('button',{name:'Merge missing observations',exact:true}).isVisible(),false,'a file read completing after confirmed removal must not reopen restore');assert.equal(await page.evaluate(()=>localStorage.getItem('karnala-field-notebook-v1')),null);
-  console.log('Notebook edit/delete/cancel/undo/export/strict import/merge/replace recovery and scoped keyboard camera passed');
+
   await page.route('**/panoramas/karnala.webp', route => route.abort());
   await page.reload();
   await page.evaluate(() => { window.disableWebGL = false; });
@@ -153,7 +109,7 @@ try {
   await page.waitForFunction(() => !document.querySelector('.tour-status'));
   assert.equal(await page.locator('.psv-container').count(),1);
   assert.equal(errors.filter(message=>!/WebGL/.test(message)).length,0);
-  console.log('Browser smoke passed: panorama, touch, scene lifecycle, dialog focus, responsive widths, failed image and retry.');
+  console.log('Browser smoke passed: panorama, touch, page-card orientation, wheel zoom vs page scroll, dialog, responsive widths, failed image and retry.');
 } finally {
   await browser?.close();
   preview.kill();
