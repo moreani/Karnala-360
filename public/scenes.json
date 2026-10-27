@@ -1,0 +1,153 @@
+[
+  {
+    "id": "karnala",
+    "title": "The Rock Face",
+    "description": "Cliff face above the valley, looking north-east within the same photograph.",
+    "group": "Orientations",
+    "image": "/panoramas/karnala.webp",
+    "initialYaw": 25,
+    "initialPitch": 5,
+    "initialFov": 75,
+    "hotspots": [
+      {
+        "id": "next-orientation",
+        "type": "navigation",
+        "yaw": 20,
+        "pitch": -2,
+        "target": "karnala-summit",
+        "icon": "arrow",
+        "title": "Next view",
+        "description": "Turn to the valley and the far hill."
+      },
+      {
+        "id": "karnala-top",
+        "type": "navigation",
+        "yaw": 110,
+        "pitch": -12,
+        "target": "karnala-summit",
+        "icon": "arrow",
+        "title": "Next view",
+        "description": "Turn to the valley and the far hill."
+      },
+      {
+        "id": "karnala-info",
+        "type": "info",
+        "yaw": -45,
+        "pitch": 10,
+        "icon": "info",
+        "title": "Historical Fort",
+        "description": "Karnala Fort is a hill fort in Raigad district, Maharashtra. It was built in the 12th century and has been ruled by various dynasties including the Yadavas, Gujarat Sultanate, Portuguese, and Marathas."
+      }
+    ]
+  },
+  {
+    "id": "karnala-summit",
+    "title": "Valley & Far Hill",
+    "description": "The valley floor and a distant pointed hill, looking south.",
+    "group": "Orientations",
+    "image": "/panoramas/karnala.webp",
+    "initialYaw": 180,
+    "initialPitch": 0,
+    "initialFov": 80,
+    "hotspots": [
+      {
+        "id": "back-to-base",
+        "type": "navigation",
+        "yaw": 0,
+        "pitch": 15,
+        "target": "karnala",
+        "icon": "arrow",
+        "title": "Back to the rock face",
+        "description": "Return to the cliff face."
+      }
+    ]
+  },
+  {
+    "id": "karnala-trail",
+    "title": "Cliff Wall",
+    "description": "Close rock wall on the left, the plains opening on the right.",
+    "group": "Orientations",
+    "image": "/panoramas/karnala.webp",
+    "initialYaw": 90,
+    "initialPitch": -10,
+    "initialFov": 70,
+    "hotspots": [
+      {
+        "id": "trail-to-summit",
+        "type": "navigation",
+        "yaw": 120,
+        "pitch": -4,
+        "target": "karnala-ghats",
+        "icon": "arrow",
+        "title": "Next view",
+        "description": "Turn towards the summit rock."
+      }
+    ]
+  },
+  {
+    "id": "karnala-ruins",
+    "title": "Open Plains",
+    "description": "Open sky above the plains, with the cliff edge on the right.",
+    "group": "Orientations",
+    "image": "/panoramas/karnala.webp",
+    "initialYaw": 270,
+    "initialPitch": 5,
+    "initialFov": 75,
+    "hotspots": [
+      {
+        "id": "ruins-to-rock",
+        "type": "navigation",
+        "yaw": 225,
+        "pitch": 0,
+        "target": "karnala",
+        "icon": "arrow",
+        "title": "Back to the rock face",
+        "description": "Return to the cliff face."
+      }
+    ]
+  },
+  {
+    "id": "karnala-ghats",
+    "title": "The Summit Rock",
+    "description": "The weathered summit rock, filling the frame.",
+    "group": "Orientations",
+    "image": "/panoramas/karnala.webp",
+    "initialYaw": 45,
+    "initialPitch": 10,
+    "initialFov": 85,
+    "hotspots": [
+      {
+        "id": "ghats-to-plains",
+        "type": "navigation",
+        "yaw": 80,
+        "pitch": 0,
+        "target": "karnala-ruins",
+        "icon": "arrow",
+        "title": "Next view",
+        "description": "Turn towards the open plains."
+      }
+    ]
+  },
+  {
+    "id": "karnala-sunset",
+    "title": "Hazy Ridgeline",
+    "description": "Hazy ridge and plains below, looking west.",
+    "group": "Orientations",
+    "image": "/panoramas/karnala.webp",
+    "initialYaw": 150,
+    "initialPitch": -5,
+    "initialFov": 75,
+    "hotspots": [
+      {
+        "id": "sunset-to-summit",
+        "type": "navigation",
+        "yaw": 190,
+        "pitch": 0,
+        "target": "karnala-summit",
+        "icon": "arrow",
+        "title": "Next view",
+        "description": "Turn towards the valley."
+      }
+    ]
+  }
+]

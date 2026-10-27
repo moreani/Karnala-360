@@ -1,0 +1,45 @@
+{
+  "name": "virtual360",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "lint": "oxlint",
+    "preview": "vite preview",
+    "test": "tsx --test test/*.test.ts",
+    "test:browser": "npm run build && node test/browser-smoke.mjs"
+  },
+  "dependencies": {
+    "@photo-sphere-viewer/core": "5.14.1",
+    "@photo-sphere-viewer/markers-plugin": "5.14.1",
+    "@radix-ui/react-icons": "^1.3.2",
+    "@radix-ui/react-slot": "^1.3.3",
+    "@tailwindcss/postcss": "^4.3.3",
+    "@tailwindcss/vite": "^4.3.3",
+    "@types/three": "^0.185.1",
+    "autoprefixer": "^10.5.4",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "lucide-react": "^1.27.0",
+    "postcss": "^8.5.23",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7",
+    "tailwind-merge": "^3.6.0",
+    "tailwindcss": "^4.3.3",
+    "three": "^0.185.1",
+    "zustand": "^5.0.14"
+  },
+  "devDependencies": {
+    "@types/node": "^24.13.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^6.0.3",
+    "oxlint": "^1.71.0",
+    "playwright": "1.61.0",
+    "tsx": "4.23.15",
+    "typescript": "~6.0.2",
+    "vite": "^8.1.1"
+  }
+}
